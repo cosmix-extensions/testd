@@ -155,16 +155,39 @@ class XXXFreeProvider : CsxApi() {
             
             var found = false
             
-            // 1. Try to find iframes directly and pass to Extractors
+            // 1. Fetch iframes directly and extract
             doc.select("iframe").forEach { iframe ->
-                val src = iframe.attr("src")
+                var src = iframe.attr("src")
+                if (src.startsWith("//")) src = "https:$src"
+                
                 if (src.isNotBlank() && !src.contains("crwdcntrl") && !src.contains("javascript:false")) {
-                    Log.d("XXXFree", "Found iframe: $src")
-                    if (src.contains("firestream.to") || src.contains("vsonic") || src.contains("vidsonic") || src.contains("woffxxx") || src.contains("vidlox")) {
-                        loadExtractor(src, subtitleCallback, callback)
-                        found = true
-                    } else {
-                        // Attempt fallback default extractor
+                    Log.d("XXXFree", "Fetching iframe: $src")
+                    try {
+                        val iframeHtml = app.get(src, referer = data).text
+                        val regex = Regex("""['"]([^'"]+\.(?:mp4|m3u8)[^'"]*)['"]""")
+                        regex.findAll(iframeHtml).forEach { match ->
+                            var link = match.groupValues[1]
+                            if (link.startsWith("//")) link = "https:$link"
+                            
+                            val isM3u8 = link.contains(".m3u8")
+                            val isValidStream = link.contains("woffxxx") || link.contains("cfglobalcdn") || link.contains("secip") || link.contains("firestream") || link.contains("vsonic") || link.contains("vidsonic") || link.contains("vidlox") || link.contains("mp4")
+                            
+                            if (isValidStream) {
+                                callback.invoke(
+                                    ExtractorLink(
+                                        "XXXFree",
+                                        if (isM3u8) "M3U8 Stream" else "MP4 Stream",
+                                        link,
+                                        src,
+                                        Qualities.Unknown.value,
+                                        isM3u8
+                                    )
+                                )
+                                found = true
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Fallback to loadExtractor if direct parsing fails
                         loadExtractor(src, subtitleCallback, callback)
                         found = true
                     }
