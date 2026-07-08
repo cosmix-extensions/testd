@@ -11,7 +11,7 @@ class FreeProvider : CsxApi() {
     override var lang = "en"
     override val supportedTypes = setOf(TvType.Movie)
 
-    private val ua = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
 
     override val mainPage = mainPageOf(
         "$mainUrl/?filter=latest" to "Latest",
@@ -32,7 +32,7 @@ class FreeProvider : CsxApi() {
             }
         }
         
-        val doc = app.get(url, headers = ua).document
+        val doc = app.get(url).document
         val items = doc.select("article.post, div.item").mapNotNull { el ->
             val a = el.selectFirst("a[href]") ?: return@mapNotNull null
             val href = a.attr("abs:href").ifBlank { return@mapNotNull null }
@@ -57,7 +57,7 @@ class FreeProvider : CsxApi() {
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val url = if (page == 1) "$mainUrl/?s=${java.net.URLEncoder.encode(query, "UTF-8")}" else "$mainUrl/page/$page/?s=${java.net.URLEncoder.encode(query, "UTF-8")}"
-        val doc = app.get(url, headers = ua).document
+        val doc = app.get(url).document
         val items = doc.select("article.post, div.item").mapNotNull { el ->
             val a = el.selectFirst("a[href]") ?: return@mapNotNull null
             val href = a.attr("abs:href").ifBlank { return@mapNotNull null }
@@ -70,7 +70,7 @@ class FreeProvider : CsxApi() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url, headers = ua).document
+        val doc = app.get(url).document
         
         val title = doc.selectFirst("h1.entry-title, h1")?.text()?.trim() 
             ?: doc.selectFirst("meta[property=og:title]")?.attr("content") 
