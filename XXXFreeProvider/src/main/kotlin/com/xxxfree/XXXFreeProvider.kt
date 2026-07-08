@@ -12,7 +12,20 @@ class XXXFreeProvider : CsxApi() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie)
 
-    private val ua = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
+    private val ua = mapOf(
+        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language" to "en-US,en;q=0.9",
+        "Cache-Control" to "max-age=0",
+        "Sec-Ch-Ua" to "\"Not A(Brand\";v=\"99\", \"Google Chrome\";v=\"121\", \"Chromium\";v=\"121\"",
+        "Sec-Ch-Ua-Mobile" to "?0",
+        "Sec-Ch-Ua-Platform" to "\"Windows\"",
+        "Sec-Fetch-Dest" to "document",
+        "Sec-Fetch-Mode" to "navigate",
+        "Sec-Fetch-Site" to "none",
+        "Sec-Fetch-User" to "?1",
+        "Upgrade-Insecure-Requests" to "1"
+    )
 
     override val mainPage = mainPageOf(
         "$mainUrl/latest-updates/" to "Latest Updates",
@@ -24,8 +37,8 @@ class XXXFreeProvider : CsxApi() {
         val url = if (page == 1) request.data else "${request.data}$page/"
         val doc = app.get(url, headers = ua, timeout = 60).document
         
-        val items = doc.select("div.item").mapNotNull { item ->
-            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: return@mapNotNull null
+        val items = doc.select("article.loop-video").mapNotNull { item ->
+            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
             var href = a.attr("href")
             if (href.startsWith("/")) href = "$mainUrl$href"
 
@@ -53,8 +66,8 @@ class XXXFreeProvider : CsxApi() {
         val url = if (page == 1) "$mainUrl/search/$q/relevance/" else "$mainUrl/search/$q/relevance/$page/"
         val document = app.get(url, headers = ua, timeout = 60).document
         
-        val items = document.select("div.item").mapNotNull { item ->
-            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: return@mapNotNull null
+        val items = document.select("article.loop-video").mapNotNull { item ->
+            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
             var href = a.attr("href")
             if (href.startsWith("/")) href = "$mainUrl$href"
 
@@ -91,8 +104,8 @@ class XXXFreeProvider : CsxApi() {
         }
         
         val plotText = doc.selectFirst("meta[name=description]")?.attr("content")
-        val tags = doc.select("div.item:has(span:contains(Categories)) a.link").map { it.text() }
-        val actors = doc.select("div.item:has(span:contains(Pornstars)) a.btn_model").map { it.text() }
+        val tags = doc.select("div.tags a").map { it.text() }
+        val actors = doc.select("div.models a").map { it.text() }
         
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = poster
