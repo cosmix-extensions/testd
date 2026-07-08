@@ -5,7 +5,8 @@ import com.cosmix.app.*
 import com.cosmix.app.utils.*
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Document
-import android.util.Base64
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import java.util.regex.Pattern
 
 class XXXFreeProvider : CsxApi() {
@@ -36,6 +37,7 @@ class XXXFreeProvider : CsxApi() {
         "$mainUrl/most-popular/" to "Most Popular"
     )
 
+    @OptIn(ExperimentalEncodingApi::class)
     private suspend fun appGetBypass(url: String): Document {
         var resp = app.get(url, headers = ua, timeout = 60)
         var doc = resp.document
@@ -45,7 +47,7 @@ class XXXFreeProvider : CsxApi() {
             var token: String? = null
             for (b64 in base64Strings) {
                 try {
-                    val decodedBytes = Base64.decode(b64, Base64.DEFAULT)
+                    val decodedBytes = Base64.decode(b64)
                     val decodedStr = String(decodedBytes)
                     if (decodedStr.length == 32 && decodedStr.matches(Regex("^[a-f0-9]{32}$"))) {
                         token = decodedStr
