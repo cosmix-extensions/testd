@@ -1,5 +1,6 @@
 package com.xxxfree
 
+import com.cosmix.api.Log
 import com.cosmix.app.*
 import com.cosmix.app.utils.*
 import org.jsoup.nodes.Element
