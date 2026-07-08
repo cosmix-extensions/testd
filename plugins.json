@@ -9,7 +9,7 @@
             "cosmix-extensions"
         ],
         "description": "XXXFree Movies and Videos",
-        "fileSize": 44279,
+        "fileSize": 45254,
         "repositoryUrl": "https://github.com/cosmix-extensions/testd",
         "language": "en",
         "tvTypes": [
@@ -17,9 +17,9 @@
         ],
         "iconUrl": "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://xxxfree.watch/&size=128",
         "apiVersion": 1,
-        "fileHash": "sha256-df7b451eedc6fc4f6048c5bf81c5f8f0b87537edb92359daccd3bde141fc2621",
-        "jarFileSize": 102893,
+        "fileHash": "sha256-dffe4e7d68ce59faffddeb1d8729b1cfa4646bfada6779a38d20e006b651e7f9",
+        "jarFileSize": 103635,
         "jarUrl": "https://raw.githubusercontent.com/cosmix-extensions/testd/builds/XXXFreeProvider.jar",
-        "jarHash": "sha256-d7db24767ddd66de855ca10f1efa7a5daf1bb840236a19466ef480b4e6c601f8"
+        "jarHash": "sha256-396b0e3283e9d7eb10fc84ad3e645a8ba70fc24135bf8584f1acec0125cb729a"
     }
 ]
