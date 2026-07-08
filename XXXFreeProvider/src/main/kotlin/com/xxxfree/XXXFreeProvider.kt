@@ -148,8 +148,8 @@ class XXXFreeProvider : CsxApi() {
         if (data.isBlank()) return false
         
         try {
-            val html = app.get(data, headers = ua, timeout = 60).text
-            val doc = org.jsoup.Jsoup.parse(html)
+            val doc = appGetBypass(data)
+            val html = doc.html()
             
             var found = false
             
