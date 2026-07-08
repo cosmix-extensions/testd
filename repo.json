@@ -1,0 +1,8 @@
+{
+  "name": "Free Extension",
+  "description": "Free Cosmix Extension Repository",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/cosmix-extensions/test5/builds/plugins.json"
+  ]
+}
