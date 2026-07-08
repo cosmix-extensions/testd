@@ -33,13 +33,22 @@ class FreeProvider : CsxApi() {
         }
         
         val doc = app.get(url).document
+        if (doc.title().contains("Just a moment", true) || doc.title().contains("Cloudflare", true)) {
+            throw Exception("Cloudflare is blocking the connection! Please open in WebView.")
+        }
+
         val items = doc.select("article.post, div.item").mapNotNull { el ->
             val a = el.selectFirst("a[href]") ?: return@mapNotNull null
-            val href = a.attr("abs:href").ifBlank { return@mapNotNull null }
-            val title = (el.selectFirst("h2, h3, .entry-title")?.text() ?: a.attr("title")).trim().ifBlank { return@mapNotNull null }
+            var href = a.attr("href")
+            if (href.isBlank()) return@mapNotNull null
+            if (href.startsWith("/")) href = "$mainUrl$href"
+            else if (!href.startsWith("http")) href = "$mainUrl/$href"
             
-            // Get Poster from main page article
-            var poster = el.selectFirst("img")?.let { it.attr("data-src").ifBlank { it.attr("src") } }
+            val title = (el.selectFirst("h2, h3, .entry-title, .entry-header span")?.text() ?: a.attr("title")).trim().ifBlank { return@mapNotNull null }
+            
+            var poster = el.selectFirst("img")?.let { img -> 
+                img.attr("data-src").ifBlank { img.attr("src") } 
+            }
             if (poster == null) {
                 // fallback to finding div with background image if it uses that
                 val bgElement = el.selectFirst(".post-thumbnail")
@@ -58,11 +67,30 @@ class FreeProvider : CsxApi() {
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val url = if (page == 1) "$mainUrl/?s=${java.net.URLEncoder.encode(query, "UTF-8")}" else "$mainUrl/page/$page/?s=${java.net.URLEncoder.encode(query, "UTF-8")}"
         val doc = app.get(url).document
+        if (doc.title().contains("Just a moment", true) || doc.title().contains("Cloudflare", true)) {
+            throw Exception("Cloudflare is blocking the connection! Please open in WebView.")
+        }
         val items = doc.select("article.post, div.item").mapNotNull { el ->
             val a = el.selectFirst("a[href]") ?: return@mapNotNull null
-            val href = a.attr("abs:href").ifBlank { return@mapNotNull null }
-            val title = (el.selectFirst("h2, h3, .entry-title")?.text() ?: a.attr("title")).trim().ifBlank { return@mapNotNull null }
-            var poster = el.selectFirst("img")?.let { it.attr("data-src").ifBlank { it.attr("src") } }
+            var href = a.attr("href")
+            if (href.isBlank()) return@mapNotNull null
+            if (href.startsWith("/")) href = "$mainUrl$href"
+            else if (!href.startsWith("http")) href = "$mainUrl/$href"
+            
+            val title = (el.selectFirst("h2, h3, .entry-title, .entry-header span")?.text() ?: a.attr("title")).trim().ifBlank { return@mapNotNull null }
+            
+            var poster = el.selectFirst("img")?.let { img -> 
+                img.attr("data-src").ifBlank { img.attr("src") } 
+            }
+            if (poster == null) {
+                // fallback to finding div with background image if it uses that
+                val bgElement = el.selectFirst(".post-thumbnail")
+                if (bgElement != null && bgElement.attr("style").contains("background-image")) {
+                    val bgStyle = bgElement.attr("style")
+                    val bgMatch = Regex("url\\('(.*?)'\\)").find(bgStyle)
+                    if (bgMatch != null) poster = bgMatch.groupValues[1]
+                }
+            }
             
             newMovieSearchResponse(title, href, TvType.Movie) { posterUrl = poster }
         }
@@ -71,6 +99,9 @@ class FreeProvider : CsxApi() {
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
+        if (doc.title().contains("Just a moment", true) || doc.title().contains("Cloudflare", true)) {
+            throw Exception("Cloudflare is blocking the connection! Please open in WebView.")
+        }
         
         val title = doc.selectFirst("h1.entry-title, h1")?.text()?.trim() 
             ?: doc.selectFirst("meta[property=og:title]")?.attr("content") 
