@@ -3,6 +3,7 @@ package com.xxxfree
 import com.cosmix.api.Log
 import com.cosmix.app.*
 import com.cosmix.app.utils.*
+import org.jsoup.nodes.Element
 import java.util.regex.Pattern
 
 class XXXFreeProvider : CsxApi() {
@@ -33,9 +34,11 @@ class XXXFreeProvider : CsxApi() {
         "$mainUrl/most-popular/" to "Most Popular"
     )
 
+    private val cfKiller = CloudflareKiller()
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page == 1) request.data else "${request.data}$page/"
-        val doc = app.get(url, headers = ua, timeout = 60).document
+        val doc = app.get(url, headers = ua, interceptor = cfKiller, timeout = 60).document
         
         val items = doc.select("article.loop-video").mapNotNull { item ->
             val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
@@ -62,9 +65,9 @@ class XXXFreeProvider : CsxApi() {
     }
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
-        val q = java.net.URLEncoder.encode(query, "UTF-8").replace("+", "-")
+        val q = query.replace(" ", "+")
         val url = if (page == 1) "$mainUrl/search/$q/relevance/" else "$mainUrl/search/$q/relevance/$page/"
-        val document = app.get(url, headers = ua, timeout = 60).document
+        val document = app.get(url, headers = ua, interceptor = cfKiller, timeout = 60).document
         
         val items = document.select("article.loop-video").mapNotNull { item ->
             val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
@@ -95,8 +98,8 @@ class XXXFreeProvider : CsxApi() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url, headers = ua, timeout = 60).document
-        val title = doc.title().trim().replace(" - xxxfree.watch", "", true).trim()
+        val doc = app.get(url, headers = ua, interceptor = cfKiller, timeout = 60).document
+        val title = doc.selectFirst("h1.post-title, h1")?.text()?.trim() ?: doc.title().trim()
         
         var poster = doc.selectFirst("meta[property=og:image]")?.attr("content")
         if (poster == null) {
