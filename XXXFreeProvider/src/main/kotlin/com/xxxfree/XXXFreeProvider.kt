@@ -3,6 +3,8 @@ package com.xxxfree
 import com.cosmix.app.*
 import com.cosmix.app.utils.*
 import org.jsoup.nodes.Element
+import org.jsoup.nodes.Document
+import android.util.Base64
 import java.util.regex.Pattern
 
 class XXXFreeProvider : CsxApi() {
@@ -33,9 +35,35 @@ class XXXFreeProvider : CsxApi() {
         "$mainUrl/most-popular/" to "Most Popular"
     )
 
+    private suspend fun appGetBypass(url: String): Document {
+        var resp = app.get(url, headers = ua, timeout = 60)
+        var doc = resp.document
+        if (doc.title().contains("Just a moment", true) && doc.html().contains("antibot")) {
+            val html = doc.html()
+            val base64Strings = Regex("""window\.atob\(['"]([^'"]+)['"]\)""").findAll(html).map { it.groupValues[1] }.toList()
+            var token: String? = null
+            for (b64 in base64Strings) {
+                try {
+                    val decodedBytes = Base64.decode(b64, Base64.DEFAULT)
+                    val decodedStr = String(decodedBytes)
+                    if (decodedStr.length == 32 && decodedStr.matches(Regex("^[a-f0-9]{32}$"))) {
+                        token = decodedStr
+                        break
+                    }
+                } catch (e: Exception) {}
+            }
+            if (token != null) {
+                val customHeaders = ua.toMutableMap()
+                customHeaders["Cookie"] = "antibot=$token"
+                doc = app.get(url, headers = customHeaders, timeout = 60).document
+            }
+        }
+        return doc
+    }
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page == 1) request.data else "${request.data}$page/"
-        val doc = app.get(url, headers = ua, timeout = 60).document
+        val doc = appGetBypass(url)
         
         val items = doc.select("article.loop-video").mapNotNull { item ->
             val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
@@ -64,7 +92,7 @@ class XXXFreeProvider : CsxApi() {
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val q = query.replace(" ", "+")
         val url = if (page == 1) "$mainUrl/search/$q/relevance/" else "$mainUrl/search/$q/relevance/$page/"
-        val document = app.get(url, headers = ua, timeout = 60).document
+        val document = appGetBypass(url)
         
         val items = document.select("article.loop-video").mapNotNull { item ->
             val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
@@ -95,7 +123,7 @@ class XXXFreeProvider : CsxApi() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = app.get(url, headers = ua, timeout = 60).document
+        val doc = appGetBypass(url)
         val title = doc.selectFirst("h1.post-title, h1")?.text()?.trim() ?: doc.title().trim()
         
         var poster = doc.selectFirst("meta[property=og:image]")?.attr("content")
