@@ -12,10 +12,19 @@ buildscript {
         mavenCentral()
         maven("https://jitpack.io")
     }
+
     dependencies {
         classpath("com.android.tools.build:gradle:9.2.1")
         classpath("com.github.cosmix-app:cosmix-gradle-plugin:1.0.0")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
+    }
+}
+
+subprojects {
+    tasks.withType<KotlinCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        }
     }
 }
 
@@ -36,6 +45,7 @@ fun Project.android(configuration: LibraryExtension.() -> Unit) {
                 languageVersion.set(JavaLanguageVersion.of(17))
             }
         }
+
         configuration()
     }
 }
@@ -45,15 +55,19 @@ subprojects {
     apply(plugin = "app.cosmix.gradle")
 
     cosmix {
-        setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/cosmix-extensions/test5")
+        setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/cosmix-extensions/Not-For-All")
     }
 
     android {
-        namespace = "com.free"
-        compileSdk = 34
+        namespace = "com.mlsbd"
+        compileSdk = 36
 
         defaultConfig {
             minSdk = 21
+        }
+
+        lint {
+            targetSdk = 36
         }
 
         compileOptions {
@@ -67,7 +81,8 @@ subprojects {
                 freeCompilerArgs.addAll(
                     "-Xno-call-assertions",
                     "-Xno-param-assertions",
-                    "-Xno-receiver-assertions"
+                    "-Xno-receiver-assertions",
+                    "-Xannotation-default-target=param-property"
                 )
             }
         }
@@ -77,8 +92,22 @@ subprojects {
         val implementation by configurations
         val cosmix by configurations
         cosmix("com.github.cosmix-app:cosmix:pre-release")
+
         implementation(kotlin("stdlib"))
-        implementation("org.jsoup:jsoup:1.16.1")
-        implementation("com.google.code.gson:gson:2.10.1")
+        implementation("com.github.Blatzar:NiceHttp:0.4.18")
+        implementation("org.jsoup:jsoup:1.22.2")
+        implementation("androidx.annotation:annotation:1.10.0")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
+        implementation("com.fasterxml.jackson.core:jackson-databind:2.13.1")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+        implementation("org.mozilla:rhino:1.8.1")
+        implementation("me.xdrop:fuzzywuzzy:1.4.0")
+        implementation("com.google.code.gson:gson:2.14.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+        implementation("org.bouncycastle:bcpkix-jdk18on:1.84")
     }
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
 }

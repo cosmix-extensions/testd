@@ -1,2 +1,1 @@
-rootProject.name = "Free Extension"
-include(":FreeProvider")
+﻿include(":XXXFreeProvider")
