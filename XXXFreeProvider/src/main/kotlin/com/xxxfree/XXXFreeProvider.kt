@@ -32,9 +32,10 @@ class XXXFreeProvider : CsxApi() {
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/latest-updates/" to "Latest Updates",
-        "$mainUrl/top-rated/" to "Top Rated",
-        "$mainUrl/most-popular/" to "Most Popular"
+        "$mainUrl/?filter=latest" to "Latest Updates",
+        "$mainUrl/?filter=popular" to "Most Popular",
+        "$mainUrl/category/studio/" to "Top Studios",
+        "$mainUrl/actress-performes77488/" to "Top Pornstars"
     )
 
     @OptIn(ExperimentalEncodingApi::class)
@@ -65,7 +66,15 @@ class XXXFreeProvider : CsxApi() {
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = if (page == 1) request.data else "${request.data}$page/"
+        val url = if (page == 1) {
+            request.data
+        } else {
+            if (request.data.contains("?filter=")) {
+                request.data.replace("?filter=", "page/$page/?filter=")
+            } else {
+                if (request.data.endsWith("/")) "${request.data}page/$page/" else "${request.data}/page/$page/"
+            }
+        }
         val doc = appGetBypass(url)
         
         val items = doc.select("article.loop-video").mapNotNull { item ->
