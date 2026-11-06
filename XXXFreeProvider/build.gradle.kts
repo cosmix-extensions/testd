@@ -7,5 +7,5 @@ cloudstream {
     status = 1
     tvTypes = listOf("Others")
     isCrossPlatform = true
-    iconUrl = "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://www.freepornvideos.xxx/&size=128"
+    iconUrl = "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://xxxfree.watch/&size=128"
 }
