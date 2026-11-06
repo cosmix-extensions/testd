@@ -1,12 +1,10 @@
 package com.xxxfree
 
-import com.cosmix.app.SubtitleFile
-import com.cosmix.app.app
-import com.cosmix.app.utils.ExtractorApi
-import com.cosmix.app.utils.ExtractorLink
-import com.cosmix.app.utils.ExtractorLinkType
-import com.cosmix.app.utils.Qualities
-import com.cosmix.app.utils.newExtractorLink
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 
 class WoffXXXExtractor : ExtractorApi() {
     override val name = "WoffXXX"
@@ -25,15 +23,14 @@ class WoffXXXExtractor : ExtractorApi() {
             if (link.contains("woffxxx") || link.contains("cfglobalcdn") || link.contains("secip")) {
                 val isM3u8 = link.contains(".m3u8")
                 callback.invoke(
-                    newExtractorLink(
+                    ExtractorLink(
                         name,
                         name,
                         link,
-                        if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                    ) {
-                        this.referer = url
-                        this.quality = Qualities.P1080.value
-                    }
+                        url,
+                        Qualities.P1080.value,
+                        isM3u8
+                    )
                 )
             }
         }
@@ -57,16 +54,16 @@ class VidloxExtractor : ExtractorApi() {
         }
         
         link?.let {
+            val isM3u8 = it.contains(".m3u8")
             callback.invoke(
-                newExtractorLink(
+                ExtractorLink(
                     name,
                     name,
                     it,
-                    ExtractorLinkType.VIDEO
-                ) {
-                    this.referer = url
-                    this.quality = Qualities.Unknown.value
-                }
+                    url,
+                    Qualities.Unknown.value,
+                    isM3u8
+                )
             )
         }
     }
@@ -89,15 +86,14 @@ class FirestreamExtractor : ExtractorApi() {
             if (link.contains("firestream") && (link.contains("md5") || link.contains("expires"))) {
                 val isM3u8 = link.contains(".m3u8")
                 callback.invoke(
-                    newExtractorLink(
+                    ExtractorLink(
                         name,
                         name,
                         link,
-                        if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                    ) {
-                        this.referer = url
-                        this.quality = Qualities.Unknown.value
-                    }
+                        url,
+                        Qualities.Unknown.value,
+                        isM3u8
+                    )
                 )
             }
         }
@@ -121,15 +117,14 @@ class VSonicExtractor : ExtractorApi() {
             if (link.contains("vidsonic.net") || link.contains("vsonic")) {
                 val isM3u8 = link.contains(".m3u8")
                 callback.invoke(
-                    newExtractorLink(
+                    ExtractorLink(
                         name,
                         name,
                         link,
-                        if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-                    ) {
-                        this.referer = url
-                        this.quality = Qualities.Unknown.value
-                    }
+                        url,
+                        Qualities.Unknown.value,
+                        isM3u8
+                    )
                 )
             }
         }
