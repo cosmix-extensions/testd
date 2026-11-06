@@ -1,84 +1,31 @@
 package com.xxxfree
 
-import com.cosmix.api.Log
-import com.cosmix.app.*
-import com.cosmix.app.utils.*
-import org.jsoup.nodes.Element
-import org.jsoup.nodes.Document
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
+import android.util.Log
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
 import java.util.regex.Pattern
 
-class XXXFreeProvider : CsxApi() {
+class XXXFreeProvider : MainAPI() {
     override var mainUrl = "https://xxxfree.watch"
     override var name = "XXXFree"
     override var lang = "en"
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie)
 
-    private val ua = mapOf(
-        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        "Accept-Language" to "en-US,en;q=0.9",
-        "Cache-Control" to "max-age=0",
-        "Sec-Ch-Ua" to "\"Not A(Brand\";v=\"99\", \"Google Chrome\";v=\"121\", \"Chromium\";v=\"121\"",
-        "Sec-Ch-Ua-Mobile" to "?0",
-        "Sec-Ch-Ua-Platform" to "\"Windows\"",
-        "Sec-Fetch-Dest" to "document",
-        "Sec-Fetch-Mode" to "navigate",
-        "Sec-Fetch-Site" to "none",
-        "Sec-Fetch-User" to "?1",
-        "Upgrade-Insecure-Requests" to "1"
-    )
+    private val ua = mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
 
     override val mainPage = mainPageOf(
-        "$mainUrl/?filter=latest" to "Latest Updates",
-        "$mainUrl/?filter=popular" to "Most Popular",
-        "$mainUrl/category/studio/" to "Top Studios",
-        "$mainUrl/actress-performes77488/" to "Top Pornstars"
+        "$mainUrl/latest-updates/" to "Latest Updates",
+        "$mainUrl/top-rated/" to "Top Rated",
+        "$mainUrl/most-popular/" to "Most Popular"
     )
 
-    @OptIn(ExperimentalEncodingApi::class)
-    private suspend fun appGetBypass(url: String): Document {
-        var resp = app.get(url, headers = ua, timeout = 60)
-        var doc = resp.document
-        if (doc.title().contains("Just a moment", true) && doc.html().contains("antibot")) {
-            val html = doc.html()
-            val base64Strings = Regex("""window\.atob\(['"]([^'"]+)['"]\)""").findAll(html).map { it.groupValues[1] }.toList()
-            var token: String? = null
-            for (b64 in base64Strings) {
-                try {
-                    val decodedBytes = Base64.decode(b64)
-                    val decodedStr = String(decodedBytes)
-                    if (decodedStr.length == 32 && decodedStr.matches(Regex("^[a-f0-9]{32}$"))) {
-                        token = decodedStr
-                        break
-                    }
-                } catch (e: Exception) {}
-            }
-            if (token != null) {
-                val customHeaders = ua.toMutableMap()
-                customHeaders["Cookie"] = "antibot=$token"
-                doc = app.get(url, headers = customHeaders, timeout = 60).document
-            }
-        }
-        return doc
-    }
-
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = if (page == 1) {
-            request.data
-        } else {
-            if (request.data.contains("?filter=")) {
-                request.data.replace("?filter=", "page/$page/?filter=")
-            } else {
-                if (request.data.endsWith("/")) "${request.data}page/$page/" else "${request.data}/page/$page/"
-            }
-        }
-        val doc = appGetBypass(url)
+        val url = if (page == 1) request.data else "${request.data}$page/"
+        val doc = app.get(url, headers = ua, timeout = 60).document
         
-        val items = doc.select("article.loop-video").mapNotNull { item ->
-            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
+        val items = doc.select("div.item").mapNotNull { item ->
+            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: return@mapNotNull null
             var href = a.attr("href")
             if (href.startsWith("/")) href = "$mainUrl$href"
 
@@ -102,12 +49,12 @@ class XXXFreeProvider : CsxApi() {
     }
 
     override suspend fun search(query: String, page: Int): SearchResponseList? {
-        val q = query.replace(" ", "+")
+        val q = java.net.URLEncoder.encode(query, "UTF-8").replace("+", "-")
         val url = if (page == 1) "$mainUrl/search/$q/relevance/" else "$mainUrl/search/$q/relevance/$page/"
-        val document = appGetBypass(url)
+        val document = app.get(url, headers = ua, timeout = 60).document
         
-        val items = document.select("article.loop-video").mapNotNull { item ->
-            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: item.selectFirst("a") ?: return@mapNotNull null
+        val items = document.select("div.item").mapNotNull { item ->
+            val a = item.selectFirst("a[href*=/videos/], a[href*=/movie/], a.link") ?: return@mapNotNull null
             var href = a.attr("href")
             if (href.startsWith("/")) href = "$mainUrl$href"
 
@@ -135,8 +82,8 @@ class XXXFreeProvider : CsxApi() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val doc = appGetBypass(url)
-        val title = doc.selectFirst("h1.post-title, h1")?.text()?.trim() ?: doc.title().trim()
+        val doc = app.get(url, headers = ua, timeout = 60).document
+        val title = doc.title().trim().replace(" - xxxfree.watch", "", true).trim()
         
         var poster = doc.selectFirst("meta[property=og:image]")?.attr("content")
         if (poster == null) {
@@ -144,8 +91,8 @@ class XXXFreeProvider : CsxApi() {
         }
         
         val plotText = doc.selectFirst("meta[name=description]")?.attr("content")
-        val tags = doc.select("div.tags a").map { it.text() }
-        val actors = doc.select("div.models a").map { it.text() }
+        val tags = doc.select("div.item:has(span:contains(Categories)) a.link").map { it.text() }
+        val actors = doc.select("div.item:has(span:contains(Pornstars)) a.btn_model").map { it.text() }
         
         return newMovieLoadResponse(title, url, TvType.Movie, url) {
             this.posterUrl = poster
@@ -159,19 +106,17 @@ class XXXFreeProvider : CsxApi() {
         if (data.isBlank()) return false
         
         try {
-            val doc = appGetBypass(data)
-            val html = doc.html()
+            val html = app.get(data, headers = ua, timeout = 60).text
+            val doc = org.jsoup.Jsoup.parse(html)
             
             var found = false
             
-            // 1. Pass iframes to Extractors
+            // 1. Try to find iframes directly and pass to Extractors
             doc.select("iframe").forEach { iframe ->
-                var src = iframe.attr("src")
-                if (src.startsWith("//")) src = "https:$src"
-                
+                val src = iframe.attr("src")
                 if (src.isNotBlank() && !src.contains("crwdcntrl") && !src.contains("javascript:false")) {
                     Log.d("XXXFree", "Found iframe: $src")
-                    if (src.contains("firestream") || src.contains("vsonic") || src.contains("vidsonic") || src.contains("woffxxx") || src.contains("vidlox")) {
+                    if (src.contains("firestream.to") || src.contains("vsonic") || src.contains("vidsonic") || src.contains("woffxxx") || src.contains("vidlox")) {
                         loadExtractor(src, subtitleCallback, callback)
                         found = true
                     } else {
@@ -183,12 +128,12 @@ class XXXFreeProvider : CsxApi() {
             }
             
             // 2. Fallback: Parse direct .mp4 links in the main HTML just in case
-            val matcher = Pattern.compile("src=['\"]([^'\"]*\\.mp4[^'\"]*)['\"]").matcher(html)
+            val matcher = Pattern.compile("src=['\\\"]([^'\\\"]*\\\\.mp4[^'\\\"]*)['\\\"]").matcher(html)
             while (matcher.find()) {
                 var streamUrl = matcher.group(1) ?: continue
                 if (streamUrl.startsWith("//")) streamUrl = "https:$streamUrl"
                 
-                val qualityMatch = Regex("(\\d{3,4})[mp]?\\.mp4").find(streamUrl)
+                val qualityMatch = Regex("(\\\\d{3,4})[mp]?\\\\.mp4").find(streamUrl)
                 var qualityValue = Qualities.Unknown.value
                 var qualityName = "Direct Stream"
                 
@@ -205,14 +150,14 @@ class XXXFreeProvider : CsxApi() {
                 }
 
                 callback.invoke(
-                    newExtractorLink(
+                    ExtractorLink(
                         this.name,
                         qualityName,
                         streamUrl,
-                        ExtractorLinkType.VIDEO
-                    ) {
-                        quality = qualityValue
-                    }
+                        data,
+                        qualityValue,
+                        streamUrl.contains(".m3u8")
+                    )
                 )
                 found = true
             }
