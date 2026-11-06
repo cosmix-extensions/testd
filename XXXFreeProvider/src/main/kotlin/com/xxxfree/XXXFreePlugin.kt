@@ -1,16 +1,17 @@
 package com.xxxfree
 
-import com.cosmix.app.plugins.CsxPlugin
-import com.cosmix.app.plugins.CsxPluginAnnotation
+import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
+import com.lagradost.cloudstream3.plugins.BasePlugin
 
-@CsxPluginAnnotation
-class XXXFreePlugin : CsxPlugin() {
+@CloudstreamPlugin
+class XXXFreePlugin: BasePlugin() {
     override fun load() {
-        registerCsxApi(XXXFreeProvider())
-        registerExtractorApi(WoffXXXExtractor())
-        registerExtractorApi(VidloxExtractor())
-        registerExtractorApi(FirestreamExtractor())
-        registerExtractorApi(VSonicExtractor())
+        // All providers should be added in this manner. Please don't edit the providers list directly.
+        registerMainAPI(XXXFreeProvider())
+        
+        registerExtractorAPI(WoffXXXExtractor())
+        registerExtractorAPI(VidloxExtractor())
+        registerExtractorAPI(FirestreamExtractor())
+        registerExtractorAPI(VSonicExtractor())
     }
 }
-
