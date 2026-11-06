@@ -1,1 +1,1 @@
-﻿include(":XXXFreeProvider")
+include(":XXXFreeProvider")
